@@ -5,30 +5,40 @@ print("loading libraries")
 import pandas
 import torch
 from torch import nn
+from torch import tensor
+from torch.utils.data import TensorDataset, DataLoader
 
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report
+
 import numpy
 
 # load the data
-print("loading data")
-dataDF = pandas.read_csv("C:/Users/xiest/OneDrive - The Pennsylvania State University/Documents/CMPSC 448/Homework/MIDTERM1_LLM-Guess/dataset_small.csv")
-#dataDF.info()
+dataDF = pandas.read_csv("train_v2_drcat_02.csv")
+
+llm_label = "source"
+input_label = "prompt_name"
+output_label = "text"
+
+# create class encodings
+labels = dataDF[llm_label].dropna().unique()
+class_encodings = {
+    label: i for i, label in enumerate(sorted(labels))
+}
+id_to_class = {
+    i: label for label, i in class_encodings.items()
+}
+dataDF[llm_label] = dataDF[llm_label].map(class_encodings)
 
 #transform data into a suitable form
-MAX_LENGTH = 512
-encoding = {
-    "GPT-5.6" : 0,
-    "Claude 4.5" : 1,
-    "Gemini 3.6" : 2,
-}
-dataDF["llm"] = dataDF["llm"].map(encoding)
-
-xDF = dataDF["output"]
-yDF = dataDF["llm"]
-
+xDF = dataDF[output_label]
+yDF = dataDF[llm_label]
 xTrain, xTest, yTrain, yTest = train_test_split(xDF, yDF, test_size = 0.3, stratify = yDF, random_state = 67)
 
-# tokenize
+
+# Create the vocabulary
+MAX_LENGTH = 512
+
 paddingToken = "<PADDING>"
 unknownToken = "<UNKNOWN>"
 vocab = {
@@ -36,13 +46,14 @@ vocab = {
     unknownToken : 1
     }
 
-# produce encodings for different tokens
-for text in xTrain:
-    tokens = str(text).lower().split()
-
-    for token in tokens:
-        if token not in vocab:
-            vocab[token] = len(vocab)
+# adds tokens into vocabulary
+def add_vocab(text_column):
+    # produce encodings for different tokens
+    for text in text_column:
+        tokens = str(text).lower().split()
+        for token in tokens:
+            if token not in vocab:
+                vocab[token] = len(vocab)
 
 # turns output data into columns
 def encode(text_column):
@@ -62,67 +73,82 @@ def encode(text_column):
 
 
 #create tensor vectors
+add_vocab(xTrain)
+
 xTrain = torch.tensor(encode(xTrain), dtype = torch.long)
 xTest = torch.tensor(encode(xTest), dtype = torch.long)
-
 yTrain = torch.tensor(yTrain.to_numpy(), dtype = torch.long)
 yTest = torch.tensor(yTest.to_numpy(), dtype = torch.long)
 
-
-print(xTrain)
 print(xTrain.shape)
-print(yTrain)
 print(yTrain.shape)
 
+# we must do it in batches with the bigger dataset because otherwise the program will crash due to not enough memory
+train_dataset = TensorDataset(xTrain, yTrain)
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=2)
 
 #create the model
-embedding_dimension = 100
-embedding = nn.Embedding(len(vocab), embedding_dimension, vocab[paddingToken])
-#need to transpose embedding because of expected input order in convolution layer
+parameters = {
+    "embedding_dimension" : 100,
+    "out_channels" : 8,
+    "kernel_size" : 3,
+    "dropout" : 0.5
+    }
 
+
+embedding = nn.Embedding(len(vocab), parameters["embedding_dimension"], vocab[paddingToken])
 classifier = nn.Sequential(
-    nn.Conv1d(in_channels = embedding_dimension, out_channels = 8, kernel_size = 3),
+    nn.Conv1d(in_channels = parameters["embedding_dimension"], out_channels = parameters["out_channels"], kernel_size = parameters["kernel_size"]),
     nn.ReLU(),
     nn.AdaptiveAvgPool1d(1),
     nn.Flatten(),
-    nn.Dropout(0.5),
-    nn.Linear(8, 3)
+    nn.Dropout(parameters["dropout"]),
+    nn.Linear(parameters["out_channels"], len(class_encodings))
 )
+loss_func = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(list(embedding.parameters()) + list(classifier.parameters()), lr=1e-3)
 
-def model(token_ids):
+# train the model
+def get_scores(token_ids):
     x = embedding(token_ids)  # (batch, 512) -> (batch, 512, 32)
     x = x.transpose(1, 2)    # (batch, 512, 32) -> (batch, 32, 512)
     return classifier(x)     # (batch, 3)
 
-print("fitting")
+def fit_model(xTrain, epochs):
+    print("fitting")
 
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(
-    list(embedding.parameters()) + list(classifier.parameters()),
-    lr=1e-3,
-)
+    for epoch in range(epochs):
+        total_loss = 0.0
+        embedding.train()
+        classifier.train()
+        
+        
+        for batch_x, batch_y in train_loader:
+            optimizer.zero_grad()
+            scores = get_scores(batch_x)
+            loss = loss_func(scores, batch_y)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+            
+        print("Epoch:", str(epoch), " , Loss:" , str(total_loss), ", Accuracy:")
+        #print("Epoch:", str(epoch), " , Loss:" , str(loss.item()), ", Accuracy:", accuracy_score(yTrain, torch.argmax(scores, dim=1)))
 
-for epoch in range(500):
-    embedding.train()
-    classifier.train()
-    logits = model(xTrain)
-    loss = criterion(logits, yTrain)
-    print(loss)
 
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+fit_model(xTrain, 15)
+
+# evaluate the model
+embedding.eval()
+classifier.eval()
+
+with torch.no_grad():
+    testPredictions = torch.argmax(get_scores(xTest), dim=1)
+    testProbabilities = torch.softmax(get_scores(xTest), dim=1)
+    print("Accuracy: ", accuracy_score(yTest, testPredictions))
 
 
-trainPredictions = model(xTrain)
-print("predict")
-print(trainPredictions)
-print("correct")
-print(yTrain)
-
-trainPredictions = model(xTest)
-print("predict")
-print(trainPredictions)
-print("correct")
-print(yTest)
-print(criterion(trainPredictions, yTest))
+#print("Predictions:")
+#print(testPredictions)
+#print("Correct:")
+#print(yTest)
+#print(loss_func(testPredictions, yTest))
