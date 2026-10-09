@@ -35,7 +35,7 @@ xDF = dataDF[output_label]
 yDF = dataDF[llm_label]
 xTrain, xTest, yTrain, yTest = train_test_split(xDF, yDF, test_size = 0.3, stratify = yDF, random_state = 67)
 
-
+# TODO: Replace this with an actual good tokenizer libary (ie tiktoken)
 # Create the vocabulary
 MAX_LENGTH = 512
 
@@ -114,11 +114,12 @@ def get_scores(token_ids):
     x = x.transpose(1, 2)    # (batch, 512, 32) -> (batch, 32, 512)
     return classifier(x)     # (batch, 3)
 
-def fit_model(xTrain, epochs):
+def fit_model(epochs):
     print("fitting")
 
     for epoch in range(epochs):
         total_loss = 0.0
+        total_items = 0
         embedding.train()
         classifier.train()
         
@@ -129,13 +130,17 @@ def fit_model(xTrain, epochs):
             loss = loss_func(scores, batch_y)
             loss.backward()
             optimizer.step()
-            total_loss += loss.item()
             
-        print("Epoch:", str(epoch), " , Loss:" , str(total_loss), ", Accuracy:")
+            batch_size = batch_x.size(0)
+            total_loss += loss.item() * batch_size
+            total_items += batch_size
+
+        
+        print("Epoch:", str(epoch), " , Loss:" , str(total_loss/total_items))
         #print("Epoch:", str(epoch), " , Loss:" , str(loss.item()), ", Accuracy:", accuracy_score(yTrain, torch.argmax(scores, dim=1)))
 
-
-fit_model(xTrain, 15)
+torch.set_num_threads(8)
+fit_model(15)
 
 # evaluate the model
 embedding.eval()
@@ -146,6 +151,7 @@ with torch.no_grad():
     testProbabilities = torch.softmax(get_scores(xTest), dim=1)
     print("Accuracy: ", accuracy_score(yTest, testPredictions))
 
+#latest accuracy: 0.807443
 
 #print("Predictions:")
 #print(testPredictions)
