@@ -1,0 +1,169 @@
+Results for DAIGT V2 Train Dataset
+
+CNN, Output Only
+Loss: 0.2241734117269516
+Accuracy: 0.9160909293514597
+Report:
+                                     precision    recall  f1-score   support
+
+   NousResearch/Llama-2-7b-chat-hf       0.97      0.93      0.95        80
+                     chat_gpt_moth       0.96      0.96      0.96       484
+                    cohere-command       0.79      0.49      0.60        70
+                 darragh_claude_v6       0.52      0.76      0.61       200
+                 darragh_claude_v7       0.53      0.29      0.38       200
+                    falcon_180b_v1       0.76      0.77      0.76       211
+                     kingki19_palm       0.96      1.00      0.98       277
+                       llama2_chat       0.98      0.95      0.96       484
+                      llama_70b_v1       0.85      0.78      0.81       234
+              mistral7binstruct_v1       0.84      0.81      0.82       484
+              mistral7binstruct_v2       0.79      0.81      0.80       484
+mistralai/Mistral-7B-Instruct-v0.1       0.86      0.94      0.90        80
+                  palm-text-bison1       0.89      0.80      0.84        70
+                   persuade_corpus       0.97      0.99      0.98      5200
+                         radek_500       0.99      0.96      0.97       100
+                         radekgpt4       0.89      1.00      0.94        40
+                      train_essays       0.71      0.63      0.67       276
+
+                          accuracy                           0.92      8974
+                         macro avg       0.84      0.81      0.82      8974
+                      weighted avg       0.91      0.92      0.91      8974
+
+CNN, Input Only
+Loss: 1.4174476861953735
+Accuracy: 0.5794517494985514
+Report:
+                                     precision    recall  f1-score   support
+
+   NousResearch/Llama-2-7b-chat-hf       0.00      0.00      0.00        80
+                     chat_gpt_moth       0.00      0.00      0.00       484
+                    cohere-command       0.00      0.00      0.00        70
+                 darragh_claude_v6       0.00      0.00      0.00       200
+                 darragh_claude_v7       0.00      0.00      0.00       200
+                    falcon_180b_v1       0.00      0.00      0.00       211
+                     kingki19_palm       0.00      0.00      0.00       277
+                       llama2_chat       0.00      0.00      0.00       484
+                      llama_70b_v1       0.00      0.00      0.00       234
+              mistral7binstruct_v1       0.00      0.00      0.00       484
+              mistral7binstruct_v2       0.00      0.00      0.00       484
+mistralai/Mistral-7B-Instruct-v0.1       0.00      0.00      0.00        80
+                  palm-text-bison1       0.00      0.00      0.00        70
+                   persuade_corpus       0.58      1.00      0.73      5200
+                         radek_500       0.00      0.00      0.00       100
+                         radekgpt4       0.00      0.00      0.00        40
+                      train_essays       0.00      0.00      0.00       276
+
+                          accuracy                           0.58      8974
+                         macro avg       0.03      0.06      0.04      8974
+                      weighted avg       0.34      0.58      0.43      8974
+
+CNN, Input and Ouput
+Loss: 0.21965163946151733
+Accuracy: 0.9167595275239581
+Report:
+                                     precision    recall  f1-score   support
+
+   NousResearch/Llama-2-7b-chat-hf       0.99      0.95      0.97        80
+                     chat_gpt_moth       0.95      0.95      0.95       484
+                    cohere-command       0.77      0.47      0.58        70
+                 darragh_claude_v6       0.50      0.38      0.43       200
+                 darragh_claude_v7       0.50      0.61      0.55       200
+                    falcon_180b_v1       0.72      0.79      0.75       211
+                     kingki19_palm       0.97      1.00      0.98       277
+                       llama2_chat       0.98      0.96      0.97       484
+                      llama_70b_v1       0.86      0.76      0.80       234
+              mistral7binstruct_v1       0.84      0.86      0.85       484
+              mistral7binstruct_v2       0.82      0.79      0.81       484
+mistralai/Mistral-7B-Instruct-v0.1       0.80      0.97      0.88        80
+                  palm-text-bison1       0.86      0.79      0.82        70
+                   persuade_corpus       0.97      0.99      0.98      5200
+                         radek_500       0.99      0.96      0.97       100
+                         radekgpt4       0.97      0.97      0.97        40
+                      train_essays       0.72      0.65      0.68       276
+
+                          accuracy                           0.92      8974
+                         macro avg       0.84      0.81      0.82      8974
+                      weighted avg       0.92      0.92      0.92      8974
+
+RNN, Output Only
+Accuracy: 0.8893470024515266
+Loss: 0.32217331396688564
+Report:
+                                     precision    recall  f1-score   support
+
+   NousResearch/Llama-2-7b-chat-hf       0.97      0.84      0.90        80
+                     chat_gpt_moth       0.87      0.97      0.92       484
+                    cohere-command       0.54      0.56      0.55        70
+                 darragh_claude_v6       0.46      0.97      0.62       200
+                 darragh_claude_v7       0.33      0.01      0.03       200
+                    falcon_180b_v1       0.74      0.70      0.72       211
+                     kingki19_palm       0.93      1.00      0.96       277
+                       llama2_chat       0.98      0.96      0.97       484
+                      llama_70b_v1       0.81      0.74      0.77       234
+              mistral7binstruct_v1       0.89      0.81      0.85       484
+              mistral7binstruct_v2       0.78      0.76      0.77       484
+mistralai/Mistral-7B-Instruct-v0.1       0.82      0.76      0.79        80
+                  palm-text-bison1       0.71      0.70      0.71        70
+                   persuade_corpus       0.96      0.97      0.97      5200
+                         radek_500       0.86      0.96      0.91       100
+                         radekgpt4       0.58      0.55      0.56        40
+                      train_essays       0.48      0.43      0.45       276
+
+                          accuracy                           0.89      8974
+                         macro avg       0.75      0.75      0.73      8974
+                      weighted avg       0.89      0.89      0.88      8974
+
+RNN, Input Only
+Accuracy: 0.5794517494985514
+Loss: 1.749385415431729
+Report:
+                                     precision    recall  f1-score   support
+
+   NousResearch/Llama-2-7b-chat-hf       0.00      0.00      0.00        80
+                     chat_gpt_moth       0.00      0.00      0.00       484
+                    cohere-command       0.00      0.00      0.00        70
+                 darragh_claude_v6       0.00      0.00      0.00       200
+                 darragh_claude_v7       0.00      0.00      0.00       200
+                    falcon_180b_v1       0.00      0.00      0.00       211
+                     kingki19_palm       0.00      0.00      0.00       277
+                       llama2_chat       0.00      0.00      0.00       484
+                      llama_70b_v1       0.00      0.00      0.00       234
+              mistral7binstruct_v1       0.00      0.00      0.00       484
+              mistral7binstruct_v2       0.00      0.00      0.00       484
+mistralai/Mistral-7B-Instruct-v0.1       0.00      0.00      0.00        80
+                  palm-text-bison1       0.00      0.00      0.00        70
+                   persuade_corpus       0.58      1.00      0.73      5200
+                         radek_500       0.00      0.00      0.00       100
+                         radekgpt4       0.00      0.00      0.00        40
+                      train_essays       0.00      0.00      0.00       276
+
+                          accuracy                           0.58      8974
+                         macro avg       0.03      0.06      0.04      8974
+                      weighted avg       0.34      0.58      0.43      8974
+
+RNN, Input and Output
+Accuracy: 0.8584800534878538
+Loss: 0.38126426844201533
+Report:
+                                     precision    recall  f1-score   support
+
+   NousResearch/Llama-2-7b-chat-hf       0.94      0.91      0.92        80
+                     chat_gpt_moth       0.91      0.89      0.90       484
+                    cohere-command       0.38      0.27      0.32        70
+                 darragh_claude_v6       0.48      0.94      0.64       200
+                 darragh_claude_v7       0.71      0.03      0.05       200
+                    falcon_180b_v1       0.67      0.62      0.64       211
+                     kingki19_palm       0.93      0.97      0.95       277
+                       llama2_chat       0.77      0.93      0.85       484
+                      llama_70b_v1       0.73      0.70      0.71       234
+              mistral7binstruct_v1       0.73      0.58      0.65       484
+              mistral7binstruct_v2       0.68      0.67      0.67       484
+mistralai/Mistral-7B-Instruct-v0.1       0.66      0.66      0.66        80
+                  palm-text-bison1       0.55      0.44      0.49        70
+                   persuade_corpus       0.97      0.96      0.96      5200
+                         radek_500       0.79      0.93      0.85       100
+                         radekgpt4       0.52      0.68      0.59        40
+                      train_essays       0.48      0.61      0.54       276
+
+                          accuracy                           0.86      8974
+                         macro avg       0.70      0.69      0.67      8974
+                      weighted avg       0.87      0.86      0.85      8974

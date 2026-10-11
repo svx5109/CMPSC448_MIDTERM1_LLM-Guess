@@ -11,6 +11,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 
+
 import numpy
 
 torch.set_num_threads(8)
@@ -140,14 +141,14 @@ class CNNTextClassifier:
 
     # Creates the 1D CNN model.
     def create_model(self) -> None:
-        self.embedding = nn.Embedding(len(self.vocab), self.parameters["embedding_dimension"], self.vocab["<PADDING>"]).to(device)
+        self.embedding = nn.Embedding(len(self.vocab.vocab), self.parameters["embedding_dimension"], self.vocab.vocab["<PADDING>"]).to(device)
         self.classifier = nn.Sequential(
             nn.Conv1d(in_channels = self.parameters["embedding_dimension"], out_channels = self.parameters["out_channels"], kernel_size = self.parameters["kernel_size"]),
             nn.ReLU(),
             nn.AdaptiveAvgPool1d(1),
             nn.Flatten(),
             nn.Dropout(self.parameters["dropout"]),
-            nn.Linear(self.parameters["out_channels"], self.parameters["classes"])
+            nn.Linear(self.parameters["out_channels"], len(self.vocab.class_to_id))
         ).to(device)
         self.loss_func = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(
@@ -252,9 +253,17 @@ class CNNTextClassifier:
             test_loss = self.loss_func(scores, self.y_test.to(device))
             test_predictions = torch.argmax(scores, dim=1)
             test_probabilities = torch.softmax(scores, dim=1)
+            report = classification_report(
+                self.y_test.numpy(),
+                test_predictions.cpu(),
+                labels=list(range(len(self.vocab.id_to_class))),
+                target_names=[self.vocab.id_to_class[i] for i in range(len(self.vocab.id_to_class))],
+                zero_division=0)
 
             print("Loss:", test_loss.item())
             print("Accuracy:", accuracy_score(self.y_test, test_predictions.cpu()))
+            print("Report:\n", report)
+        
 
 # RNN text classifier model
 class RNNTextClassifier:
@@ -286,7 +295,7 @@ class RNNTextClassifier:
 
     # Creates the LSTM RNN model
     def create_model(self) -> None:
-        self.embedding = nn.Embedding(len(self.vocab), self.parameters["embedding_dimension"], self.vocab["<PADDING>"]).to(device)
+        self.embedding = nn.Embedding(len(self.vocab.vocab), self.parameters["embedding_dimension"], self.vocab.vocab["<PADDING>"]).to(device)
         self.lstm = nn.LSTM(
             input_size=self.parameters["embedding_dimension"],
             hidden_size=self.parameters["hidden_size"],
@@ -295,7 +304,7 @@ class RNNTextClassifier:
             dropout=(self.parameters["dropout"])
         ).to(device)
         self.dropout = nn.Dropout(self.parameters["dropout"]).to(device)
-        self.classifier = nn.Linear(self.parameters["hidden_size"], self.parameters["classes"]).to(device)
+        self.classifier = nn.Linear(self.parameters["hidden_size"], len(self.vocab.class_to_id)).to(device)
         self.loss_func = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(
             list(self.embedding.parameters()) + 
@@ -407,8 +416,9 @@ class RNNTextClassifier:
         with torch.no_grad():    
             total_test_items = 0
             total_test_loss = 0.0
-            total_accuracy = 0
-
+            predictions = []
+            targets = []
+            
             for batch_x, batch_y in self.test_loader:
                 batch_x = batch_x.to(device)
                 batch_y = batch_y.to(device)
@@ -419,17 +429,24 @@ class RNNTextClassifier:
                 total_test_loss += loss.item() * batch_size
                 total_test_items += batch_size
 
-
                 test_predictions = torch.argmax(scores, dim=1)
-                accuracy = accuracy_score(batch_y.cpu(), test_predictions.cpu())
-                total_accuracy += accuracy * batch_size
+                predictions.extend(test_predictions.cpu().tolist())
+                targets.extend(batch_y.cpu().tolist())
                             
             #test_probabilities = torch.softmax(scores, dim=1)
-            print("Accuracy:", total_accuracy/total_test_items)
-            print("Loss:", total_test_loss/total_test_items)
+            report = classification_report(
+                targets,
+                predictions,
+                labels=list(range(len(self.vocab.id_to_class))),
+                target_names=[self.vocab.id_to_class[i] for i in range(len(self.vocab.id_to_class))],
+                zero_division=0)
 
+            print("Accuracy:", accuracy_score(targets, predictions))
+            print("Loss:", total_test_loss/total_test_items)
+            print("Report:\n", report)
 
 # load the data
+
 dataDF = pandas.read_csv("train_v2_drcat_02.csv")
 
 llm_label = "source"
@@ -443,12 +460,15 @@ xDF = dataDF[output_label]
 yDF = dataDF[llm_label]
 yDF = vocab.encode_output_column(yDF)
 
+
+# Ouput only, CNN
 xTrain, xTest, yTrain, yTest = train_test_split(xDF, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
 xTrain, xValidate, yTrain, yValidate = train_test_split(xTrain, yTrain, test_size= 0.2 / 0.8, stratify = yTrain, random_state=41)
 
-#create tensor vectors
+# add vocab
 vocab.add_vocab_tokens(xTrain)
 
+# create tensor vectors
 xTrain = tensor(vocab.encode_input_column(xTrain), dtype = torch.long)
 xValidate = tensor(vocab.encode_input_column(xValidate), dtype = torch.long)
 xTest = tensor(vocab.encode_input_column(xTest), dtype = torch.long)
@@ -456,6 +476,7 @@ yTrain = tensor(yTrain.to_numpy(), dtype = torch.long)
 yValidate = tensor(yValidate.to_numpy(), dtype = torch.long)
 yTest = tensor(yTest.to_numpy(), dtype = torch.long)
 
+# Create CNN model
 cnn_parameters = {
     "embedding_dimension" : 150,
     "out_channels" : 16,
@@ -465,24 +486,22 @@ cnn_parameters = {
     "max_epochs" : 1000,
     "batch_size" : 32,
     "shuffle" : 2,
-    "classes" : len(vocab.class_to_id),
     "learning_rate" : 1e-3,
     }
 
-"""
-cnn_model = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab.vocab, cnn_parameters)
+cnn_model = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab, cnn_parameters)
 cnn_model.fit(True)
 cnn_model.print_evaluation()
 # Accuracy: 0.9134, Loss: 0.2274
-"""
 
 # try CNN with input only
-# try CNN with both input and output
 xDF2 = dataDF[input_label]
 xTrain2, xTest2, yTrain2, yTest2 = train_test_split(xDF2, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
 xTrain2, xValidate2, yTrain2, yValidate2 = train_test_split(xTrain2, yTrain2, test_size= 0.2 / 0.8, stratify = yTrain2, random_state=41)
 
 vocab_2 = Vocab(512)
+vocab_2.class_to_id = vocab.class_to_id
+vocab_2.id_to_class = vocab.id_to_class
 vocab_2.add_vocab_tokens(xTrain2)
 
 xTrain2 = tensor(vocab_2.encode_input_column(xTrain2), dtype = torch.long)
@@ -492,11 +511,10 @@ yTrain2 = tensor(yTrain2.to_numpy(), dtype = torch.long)
 yValidate2 = tensor(yValidate2.to_numpy(), dtype = torch.long)
 yTest2 = tensor(yTest2.to_numpy(), dtype = torch.long)
 
-cnn_model_2 = CNNTextClassifier(xTrain2, yTrain2, xValidate2, yValidate2, xTest2, yTest2, vocab_2.vocab, cnn_parameters)
+cnn_model_2 = CNNTextClassifier(xTrain2, yTrain2, xValidate2, yValidate2, xTest2, yTest2, vocab_2, cnn_parameters)
 cnn_model_2.fit(True)
 cnn_model_2.print_evaluation()
 # Accuracy: 0.5794, Loss: 1.4168
-
 
 # try CNN with both input and output
 xDF3 = dataDF[[input_label, output_label]]
@@ -504,6 +522,8 @@ xTrain3, xTest3, yTrain3, yTest3 = train_test_split(xDF3, yDF, test_size = 0.2, 
 xTrain3, xValidate3, yTrain3, yValidate3 = train_test_split(xTrain3, yTrain3, test_size= 0.2 / 0.8, stratify = yTrain3, random_state=41)
 
 vocab_3 = Vocab(512)
+vocab_3.class_to_id = vocab.class_to_id
+vocab_3.id_to_class = vocab.id_to_class
 vocab_3.add_vocab_tokens(xTrain3[input_label])
 vocab_3.add_vocab_tokens(xTrain3[output_label])
 
@@ -514,13 +534,12 @@ yTrain3 = tensor(yTrain3.to_numpy(), dtype = torch.long)
 yValidate3 = tensor(yValidate3.to_numpy(), dtype = torch.long)
 yTest3 = tensor(yTest3.to_numpy(), dtype = torch.long)
 
-"""
-cnn_model_3 = CNNTextClassifier(xTrain3, yTrain3, xValidate3, yValidate3, xTest3, yTest3, vocab_3.vocab, cnn_parameters)
+cnn_model_3 = CNNTextClassifier(xTrain3, yTrain3, xValidate3, yValidate3, xTest3, yTest3, vocab_3, cnn_parameters)
 cnn_model_3.fit(True)
 cnn_model_3.print_evaluation()
 # Accuracy: 0.9185, Loss: 0.2131
-"""
-#RNN using the same datase
+
+#RNN using the same output-only dataset
 rnn_parameters = {
     "embedding_dimension" : 150,
     "hidden_size": 128,
@@ -530,26 +549,22 @@ rnn_parameters = {
     "max_epochs" : 1000,
     "batch_size" : 32,
     "shuffle" : 2,
-    "classes" : len(vocab.class_to_id),
     "learning_rate" : 1e-3,
     }
 
-"""
-rnn_model = RNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab.vocab, rnn_parameters)
+rnn_model = RNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab, rnn_parameters)
 rnn_model.fit(True)
 rnn_model.print_evaluation()
 # accuracy: 0.8620, loss: 0.3968
 
-
-rnn_model_2 = RNNTextClassifier(xTrain2, yTrain2, xValidate2, yValidate2, xTest2, yTest2, vocab_2.vocab, rnn_parameters)
+# RNN with input only
+rnn_model_2 = RNNTextClassifier(xTrain2, yTrain2, xValidate2, yValidate2, xTest2, yTest2, vocab_2, rnn_parameters)
 rnn_model_2.fit(True)
 rnn_model_2.print_evaluation()
 # accuracy: 0.5794, loss: 1.7520
 
-"""
-"""
-rnn_model_3 = RNNTextClassifier(xTrain3, yTrain3, xValidate3, yValidate3, xTest3, yTest3, vocab_3.vocab, rnn_parameters)
+# RNN with both input and output
+rnn_model_3 = RNNTextClassifier(xTrain3, yTrain3, xValidate3, yValidate3, xTest3, yTest3, vocab_3, rnn_parameters)
 rnn_model_3.fit(True)
 rnn_model_3.print_evaluation()
 # accuracy: 0.8542, loss: 0.3809 
-"""
