@@ -13,6 +13,8 @@ from sklearn.metrics import accuracy_score, classification_report
 
 import numpy
 
+torch.set_num_threads(8)
+
 # enable GPU if available
 device = torch.device("cpu")
 
@@ -27,11 +29,13 @@ class Vocab:
     def __init__(self, max_input_length):
         paddingToken = "<PADDING>"
         unknownToken = "<UNKNOWN>"
+        separatorToken = "<SEP>"
 
         self.max_length = max_input_length
         self.vocab = {
             paddingToken : 0, 
-            unknownToken : 1
+            unknownToken : 1,
+            separatorToken : 2
             }
         
     # returns encoding tables of classes
@@ -65,7 +69,39 @@ class Vocab:
             encodings.append(encoding)
         return encodings
 
+    def encode_input_row(self, row, columns):
+        encoding = []
+        col_num = 0
 
+        #input then output
+        for column in columns:
+            text = row[column]
+            tokens = str(text).lower().split()
+            # creates all the tokens for a column then gets vocab ids
+            for token in tokens:
+                if len(encoding) < self.max_length:
+                    encoding.append(self.vocab.get(token, self.vocab["<UNKNOWN>"]))
+                else:
+                    break
+
+            #encode separator
+            if col_num < len(columns) and len(encoding) < self.max_length:
+                encoding.append(self.vocab["<SEP>"])
+
+        #fill the rest with padding
+        while len(encoding) < self.max_length:
+            encoding.append(self.vocab["<PADDING>"])
+
+        return encoding
+
+
+    def encode_multiple_input_columns(self, input_df):
+        encodings = []
+        for _, row in input_df.iterrows():
+            encoding = self.encode_input_row(row, input_df.columns)
+            encodings.append(encoding)
+
+        return encodings
 
     # adds all the tokens in an input column to the vocabulary
     def add_vocab_tokens(self, text_column):
@@ -249,7 +285,7 @@ print(xTrain.shape)
 print(yTrain.shape)
 
 parameters = {
-    "embedding_dimension" : 100,
+    "embedding_dimension" : 150,
     "out_channels" : 16,
     "kernel_size" : 5,
     "dropout" : 0.2,
@@ -260,17 +296,30 @@ parameters = {
     "classes" : len(vocab.class_to_id)
     }
 
-torch.set_num_threads(8)
 
-cnn_model_output = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab.vocab, parameters)
-cnn_model_output.fit(True)
-cnn_model_output.print_evaluation()
+cnn_model = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab.vocab, parameters)
+cnn_model.fit(True)
+cnn_model.print_evaluation()
+# Accuracy: 0.9134, Loss: 0.2274
 
+# try CNN with both input and output
+xDF = dataDF[[input_label, output_label]]
+xTrain, xTest, yTrain, yTest = train_test_split(xDF, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
+xTrain, xValidate, yTrain, yValidate = train_test_split(xTrain, yTrain, test_size= 0.2 / 0.8, stratify = yTrain, random_state=41)
 
-#latest accuracy: 0.807443
+vocab_2 = Vocab(512)
+vocab_2.add_vocab_tokens(xTrain[input_label])
+vocab_2.add_vocab_tokens(xTrain[output_label])
 
-#print("Predictions:")
-#print(testPredictions)
-#print("Correct:")
-#print(yTest)
-#print(loss_func(testPredictions, yTest))
+xTrain = tensor(vocab_2.encode_multiple_input_columns(xTrain), dtype = torch.long)
+xValidate = tensor(vocab_2.encode_multiple_input_columns(xValidate), dtype = torch.long)
+xTest = tensor(vocab_2.encode_multiple_input_columns(xTest), dtype = torch.long)
+yTrain = tensor(yTrain.to_numpy(), dtype = torch.long)
+yValidate = tensor(yValidate.to_numpy(), dtype = torch.long)
+yTest = tensor(yTest.to_numpy(), dtype = torch.long)
+
+cnn_model_2 = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab_2.vocab, parameters)
+cnn_model_2.fit(True)
+cnn_model_2.print_evaluation()
+# Accuracy: 0.9185, Loss: 0.2131
+# This approach increases accuracy by a marginal amount in exchange for a larger embedding and thus slower training
