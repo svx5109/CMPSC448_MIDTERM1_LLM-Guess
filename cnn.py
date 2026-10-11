@@ -111,7 +111,7 @@ class Vocab:
             for token in tokens:
                 if token not in self.vocab:
                     self.vocab[token] = len(self.vocab)
-    
+
 # CNN text classifier model
 class CNNTextClassifier:
     # Initialize the model
@@ -150,7 +150,10 @@ class CNNTextClassifier:
             nn.Linear(self.parameters["out_channels"], self.parameters["classes"])
         ).to(device)
         self.loss_func = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.Adam(list(self.embedding.parameters()) + list(self.classifier.parameters()), lr=1e-3)
+        self.optimizer = torch.optim.Adam(
+            list(self.embedding.parameters()) + 
+            list(self.classifier.parameters()), 
+            lr=self.parameters["learning_rate"])
 
     # Gets the scores from input data. Use softmax to determine predictions of classes.
     def get_scores(self, token_ids):
@@ -253,6 +256,178 @@ class CNNTextClassifier:
             print("Loss:", test_loss.item())
             print("Accuracy:", accuracy_score(self.y_test, test_predictions.cpu()))
 
+# RNN text classifier model
+class RNNTextClassifier:
+    def __init__(self, x_train: tensor, y_train: tensor, x_validate: tensor, y_validate: tensor, x_test: tensor, y_test: tensor, vocab: dict[str, int], parameters: dict[str, int | float]) -> None:
+        self.x_train = x_train
+        self.y_train = y_train
+        self.x_validate = x_validate
+        self.y_validate = y_validate
+        self.x_test = x_test
+        self.y_test = y_test
+        self.vocab = vocab
+        self.parameters = parameters
+        self.create_data_loaders()
+        self.create_model()
+
+    # Creates the data loaders. 
+    # We must do it in batches with the bigger dataset because otherwise the program will crash due to not enough memory
+    def create_data_loaders(self) -> tuple[DataLoader, DataLoader, DataLoader]:
+        #train dataset
+        self.train_dataset = TensorDataset(self.x_train, self.y_train)
+        self.train_loader = DataLoader(self.train_dataset, batch_size=self.parameters["batch_size"], shuffle=self.parameters["shuffle"])
+        #validate dataset
+        self.validate_dataset = TensorDataset(self.x_validate, self.y_validate)
+        self.validate_loader = DataLoader(self.validate_dataset, batch_size=self.parameters["batch_size"], shuffle=self.parameters["shuffle"])
+        #test dataset (because the testing is too big)
+        self.test_dataset = TensorDataset(self.x_test, self.y_test)
+        self.test_loader = DataLoader(self.test_dataset, batch_size=self.parameters["batch_size"], shuffle=self.parameters["shuffle"])
+        return self.train_loader, self.validate_loader, self.test_loader
+
+    # Creates the LSTM RNN model
+    def create_model(self) -> None:
+        self.embedding = nn.Embedding(len(self.vocab), self.parameters["embedding_dimension"], self.vocab["<PADDING>"]).to(device)
+        self.lstm = nn.LSTM(
+            input_size=self.parameters["embedding_dimension"],
+            hidden_size=self.parameters["hidden_size"],
+            num_layers=self.parameters["num_layers"],
+            batch_first=True,
+            dropout=(self.parameters["dropout"])
+        ).to(device)
+        self.dropout = nn.Dropout(self.parameters["dropout"]).to(device)
+        self.classifier = nn.Linear(self.parameters["hidden_size"], self.parameters["classes"]).to(device)
+        self.loss_func = nn.CrossEntropyLoss()
+        self.optimizer = torch.optim.Adam(
+            list(self.embedding.parameters()) + 
+            list(self.lstm.parameters()) +
+            list(self.classifier.parameters()),    
+            lr=self.parameters["learning_rate"])
+
+    def get_scores(self, token_ids):
+        x = self.embedding(token_ids)
+        _, (hidden, _) = self.lstm(x)
+        sequence_vec = hidden[-1]
+        return self.classifier(self.dropout(sequence_vec))
+
+    # Fits the model to the training set.
+    def fit(self, print_loss: bool) -> None:
+        best_loss = float("inf")
+        best_embedding_state = None
+        best_lstm_state = None
+        best_classifier_state = None
+        best_epoch = -1
+
+        if print_loss:
+            print("fitting RNN")
+
+        for epoch in range(self.parameters["max_epochs"]):
+            self.embedding.train()
+            self.lstm.train()
+            self.dropout.train()
+            self.classifier.train()
+
+            total_train_loss = 0.0
+            total_train_items = 0
+            
+            total_validate_loss = 0.0
+            total_validate_items = 0
+
+            # gradient descent and training loss
+            for batch_x, batch_y in self.train_loader:
+                batch_x = batch_x.to(device)
+                batch_y = batch_y.to(device)
+
+                self.optimizer.zero_grad()
+                scores = self.get_scores(batch_x)
+                loss = self.loss_func(scores, batch_y)
+                loss.backward()
+                self.optimizer.step()
+
+                batch_size = batch_x.size(0)
+                total_train_loss += loss.item() * batch_size
+                total_train_items += batch_size
+
+            self.embedding.eval()
+            self.lstm.eval()
+            self.dropout.eval()
+            self.classifier.eval()
+
+            # validate loss calculation
+            with torch.no_grad():
+                for batch_x, batch_y in self.validate_loader:
+                    batch_x = batch_x.to(device)
+                    batch_y = batch_y.to(device)
+                    
+                    scores = self.get_scores(batch_x)
+                    loss = self.loss_func(scores, batch_y)
+                    
+                    batch_size = batch_x.size(0)
+                    total_validate_loss += loss.item() * batch_size
+                    total_validate_items += batch_size
+
+            # epoch loss calculation
+            train_loss = total_train_loss / total_train_items
+            validate_loss = total_validate_loss / total_validate_items
+
+            if print_loss:
+                print("Epoch:", str(epoch), "Train Loss:" , str(train_loss), "Validate Loss:", str(validate_loss))
+
+            # calculate if improved
+            if validate_loss < best_loss:
+                best_loss = validate_loss
+                best_embedding_state = {
+                    key: value.detach().clone() for key, value in self.embedding.state_dict().items()
+                }
+                best_lstm_state = {
+                    key: value.detach().clone() for key, value in self.lstm.state_dict().items()
+                }
+                best_classifier_state = {
+                    key: value.detach().clone() for key, value in self.classifier.state_dict().items()
+                }
+                best_epoch = epoch
+                epochs_no_improve = 0
+            else:
+                epochs_no_improve += 1
+    
+            # if more epochs without improvement, stop training
+            if epochs_no_improve >= self.parameters["early_stopping_epochs"]:
+                break
+
+            #restore best state
+            self.embedding.load_state_dict(best_embedding_state)
+            self.lstm.load_state_dict(best_lstm_state)
+            self.classifier.load_state_dict(best_classifier_state)
+
+    def print_evaluation(self) -> None:
+        self.embedding.eval()
+        self.lstm.eval()
+        self.dropout.eval()
+        self.classifier.eval()
+        
+        with torch.no_grad():    
+            total_test_items = 0
+            total_test_loss = 0.0
+            total_accuracy = 0
+
+            for batch_x, batch_y in self.test_loader:
+                batch_x = batch_x.to(device)
+                batch_y = batch_y.to(device)
+
+                scores = self.get_scores(batch_x)
+                loss = self.loss_func(scores, batch_y)
+                batch_size = batch_x.size(0)
+                total_test_loss += loss.item() * batch_size
+                total_test_items += batch_size
+
+
+                test_predictions = torch.argmax(scores, dim=1)
+                accuracy = accuracy_score(batch_y.cpu(), test_predictions.cpu())
+                total_accuracy += accuracy * batch_size
+                            
+            #test_probabilities = torch.softmax(scores, dim=1)
+            print("Accuracy:", total_accuracy/total_test_items)
+            print("Loss:", total_test_loss/total_test_items)
+
 
 # load the data
 dataDF = pandas.read_csv("train_v2_drcat_02.csv")
@@ -281,10 +456,7 @@ yTrain = tensor(yTrain.to_numpy(), dtype = torch.long)
 yValidate = tensor(yValidate.to_numpy(), dtype = torch.long)
 yTest = tensor(yTest.to_numpy(), dtype = torch.long)
 
-print(xTrain.shape)
-print(yTrain.shape)
-
-parameters = {
+cnn_parameters = {
     "embedding_dimension" : 150,
     "out_channels" : 16,
     "kernel_size" : 5,
@@ -293,33 +465,91 @@ parameters = {
     "max_epochs" : 1000,
     "batch_size" : 32,
     "shuffle" : 2,
-    "classes" : len(vocab.class_to_id)
+    "classes" : len(vocab.class_to_id),
+    "learning_rate" : 1e-3,
     }
 
-
-cnn_model = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab.vocab, parameters)
+"""
+cnn_model = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab.vocab, cnn_parameters)
 cnn_model.fit(True)
 cnn_model.print_evaluation()
 # Accuracy: 0.9134, Loss: 0.2274
+"""
 
+# try CNN with input only
 # try CNN with both input and output
-xDF = dataDF[[input_label, output_label]]
-xTrain, xTest, yTrain, yTest = train_test_split(xDF, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
-xTrain, xValidate, yTrain, yValidate = train_test_split(xTrain, yTrain, test_size= 0.2 / 0.8, stratify = yTrain, random_state=41)
+xDF2 = dataDF[input_label]
+xTrain2, xTest2, yTrain2, yTest2 = train_test_split(xDF2, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
+xTrain2, xValidate2, yTrain2, yValidate2 = train_test_split(xTrain2, yTrain2, test_size= 0.2 / 0.8, stratify = yTrain2, random_state=41)
 
 vocab_2 = Vocab(512)
-vocab_2.add_vocab_tokens(xTrain[input_label])
-vocab_2.add_vocab_tokens(xTrain[output_label])
+vocab_2.add_vocab_tokens(xTrain2)
 
-xTrain = tensor(vocab_2.encode_multiple_input_columns(xTrain), dtype = torch.long)
-xValidate = tensor(vocab_2.encode_multiple_input_columns(xValidate), dtype = torch.long)
-xTest = tensor(vocab_2.encode_multiple_input_columns(xTest), dtype = torch.long)
-yTrain = tensor(yTrain.to_numpy(), dtype = torch.long)
-yValidate = tensor(yValidate.to_numpy(), dtype = torch.long)
-yTest = tensor(yTest.to_numpy(), dtype = torch.long)
+xTrain2 = tensor(vocab_2.encode_input_column(xTrain2), dtype = torch.long)
+xValidate2 = tensor(vocab_2.encode_input_column(xValidate2), dtype = torch.long)
+xTest2 = tensor(vocab_2.encode_input_column(xTest2), dtype = torch.long)
+yTrain2 = tensor(yTrain2.to_numpy(), dtype = torch.long)
+yValidate2 = tensor(yValidate2.to_numpy(), dtype = torch.long)
+yTest2 = tensor(yTest2.to_numpy(), dtype = torch.long)
 
-cnn_model_2 = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab_2.vocab, parameters)
+cnn_model_2 = CNNTextClassifier(xTrain2, yTrain2, xValidate2, yValidate2, xTest2, yTest2, vocab_2.vocab, cnn_parameters)
 cnn_model_2.fit(True)
 cnn_model_2.print_evaluation()
+# Accuracy: 0.5794, Loss: 1.4168
+
+
+# try CNN with both input and output
+xDF3 = dataDF[[input_label, output_label]]
+xTrain3, xTest3, yTrain3, yTest3 = train_test_split(xDF3, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
+xTrain3, xValidate3, yTrain3, yValidate3 = train_test_split(xTrain3, yTrain3, test_size= 0.2 / 0.8, stratify = yTrain3, random_state=41)
+
+vocab_3 = Vocab(512)
+vocab_3.add_vocab_tokens(xTrain3[input_label])
+vocab_3.add_vocab_tokens(xTrain3[output_label])
+
+xTrain3 = tensor(vocab_3.encode_multiple_input_columns(xTrain3), dtype = torch.long)
+xValidate3 = tensor(vocab_3.encode_multiple_input_columns(xValidate3), dtype = torch.long)
+xTest3 = tensor(vocab_3.encode_multiple_input_columns(xTest3), dtype = torch.long)
+yTrain3 = tensor(yTrain3.to_numpy(), dtype = torch.long)
+yValidate3 = tensor(yValidate3.to_numpy(), dtype = torch.long)
+yTest3 = tensor(yTest3.to_numpy(), dtype = torch.long)
+
+"""
+cnn_model_3 = CNNTextClassifier(xTrain3, yTrain3, xValidate3, yValidate3, xTest3, yTest3, vocab_3.vocab, cnn_parameters)
+cnn_model_3.fit(True)
+cnn_model_3.print_evaluation()
 # Accuracy: 0.9185, Loss: 0.2131
-# This approach increases accuracy by a marginal amount in exchange for a larger embedding and thus slower training
+"""
+#RNN using the same datase
+rnn_parameters = {
+    "embedding_dimension" : 150,
+    "hidden_size": 128,
+    "num_layers" : 3,
+    "dropout" : 0.1,
+    "early_stopping_epochs" : 5,
+    "max_epochs" : 1000,
+    "batch_size" : 32,
+    "shuffle" : 2,
+    "classes" : len(vocab.class_to_id),
+    "learning_rate" : 1e-3,
+    }
+
+"""
+rnn_model = RNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab.vocab, rnn_parameters)
+rnn_model.fit(True)
+rnn_model.print_evaluation()
+# accuracy: 0.8620, loss: 0.3968
+
+
+rnn_model_2 = RNNTextClassifier(xTrain2, yTrain2, xValidate2, yValidate2, xTest2, yTest2, vocab_2.vocab, rnn_parameters)
+rnn_model_2.fit(True)
+rnn_model_2.print_evaluation()
+# accuracy: 0.5794, loss: 1.7520
+
+"""
+"""
+rnn_model_3 = RNNTextClassifier(xTrain3, yTrain3, xValidate3, yValidate3, xTest3, yTest3, vocab_3.vocab, rnn_parameters)
+rnn_model_3.fit(True)
+rnn_model_3.print_evaluation()
+# accuracy: 0.8542, loss: 0.3809 
+"""
