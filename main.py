@@ -1,5 +1,3 @@
-# this is the 1D CNN neural network to classify text into 3 different LLMs: GPT, Claude, and Gemini
-
 # import libraries
 print("loading libraries")
 import pandas
@@ -10,7 +8,6 @@ from torch.utils.data import TensorDataset, DataLoader
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
-
 
 import numpy
 
@@ -30,13 +27,15 @@ class Vocab:
     def __init__(self, max_input_length):
         paddingToken = "<PADDING>"
         unknownToken = "<UNKNOWN>"
-        separatorToken = "<SEP>"
+        inputToken = "<INPUT>"
+        outputToken = "<OUTPUT>"
 
         self.max_length = max_input_length
         self.vocab = {
             paddingToken : 0, 
             unknownToken : 1,
-            separatorToken : 2
+            inputToken : 2,
+            outputToken : 3
             }
         
     # returns encoding tables of classes
@@ -72,22 +71,22 @@ class Vocab:
 
     def encode_input_row(self, row, columns):
         encoding = []
-        col_num = 0
 
-        #input then output
-        for column in columns:
+        for col_num, column in enumerate(columns):
+            if col_num == 0 and len(encoding) < self.max_length:
+                encoding.append(self.vocab["<INPUT>"])
+            elif col_num == 1 and len(encoding) < self.max_length:
+                encoding.append(self.vocab["<OUTPUT>"])
+
             text = row[column]
             tokens = str(text).lower().split()
+
             # creates all the tokens for a column then gets vocab ids
             for token in tokens:
                 if len(encoding) < self.max_length:
                     encoding.append(self.vocab.get(token, self.vocab["<UNKNOWN>"]))
                 else:
                     break
-
-            #encode separator
-            if col_num < len(columns) and len(encoding) < self.max_length:
-                encoding.append(self.vocab["<SEP>"])
 
         #fill the rest with padding
         while len(encoding) < self.max_length:
@@ -138,6 +137,13 @@ class CNNTextClassifier:
         self.validate_dataset = TensorDataset(self.x_validate, self.y_validate)
         self.validate_loader = DataLoader(self.validate_dataset, batch_size=self.parameters["batch_size"], shuffle=self.parameters["shuffle"])
         return self.train_loader, self.validate_loader
+
+    """
+    nn.Conv1d(in_channels = self.parameters["out_channels"], out_channels = self.parameters["out_channels"], kernel_size = self.parameters["kernel_size"]),
+    nn.ReLU(),
+    nn.Conv1d(in_channels = self.parameters["out_channels"], out_channels = self.parameters["out_channels"], kernel_size = self.parameters["kernel_size"]),
+    nn.ReLU(),
+    """ 
 
     # Creates the 1D CNN model.
     def create_model(self) -> None:
@@ -264,7 +270,6 @@ class CNNTextClassifier:
             print("Accuracy:", accuracy_score(self.y_test, test_predictions.cpu()))
             print("Report:\n", report)
         
-
 # RNN text classifier model
 class RNNTextClassifier:
     def __init__(self, x_train: tensor, y_train: tensor, x_validate: tensor, y_validate: tensor, x_test: tensor, y_test: tensor, vocab: dict[str, int], parameters: dict[str, int | float]) -> None:
@@ -445,15 +450,87 @@ class RNNTextClassifier:
             print("Loss:", total_test_loss/total_test_items)
             print("Report:\n", report)
 
-# load the data
-
-dataDF = pandas.read_csv("train_v2_drcat_02.csv")
+RANDOM_SAMPLE = False
+SAMPLE_SIZE = 25000
+GROUP_BY_FAMILY = False
+LIMIT_LLMS = True
 
 llm_label = "source"
 input_label = "prompt_name"
 output_label = "text"
+dataDF = None
 
-vocab = Vocab(512)
+# load/transform dataset
+
+# lmsys chatbot arena
+dataDF = pandas.read_parquet("hf://datasets/lmsys/chatbot_arena_conversations/data/train-00000-of-00001-cced8514c7ed782a.parquet")
+
+rows = []
+
+# collect all llm inputs and outputs, two on each side
+for _, row in dataDF.iterrows():
+    # Model A
+    conversation = row["conversation_a"]
+    if len(conversation) >= 1:
+        user_input = conversation[0]
+        llm_output = conversation[1]
+        if user_input["role"] == "user" and llm_output["role"] == "assistant":
+            rows.append({
+                llm_label: row["model_a"],
+                input_label: user_input["content"],
+                output_label: llm_output["content"]
+            })
+
+    # Model B
+    conversation = row["conversation_b"]
+    if len(conversation) >= 1:
+        user_input = conversation[0]
+        llm_output = conversation[1]
+        if user_input["role"] == "user" and llm_output["role"] == "assistant":
+            rows.append({
+                llm_label: row["model_b"],
+                input_label: user_input["content"],
+                output_label: llm_output["content"]
+            })
+
+
+dataDF = pandas.DataFrame(rows)
+
+if RANDOM_SAMPLE:
+    dataDF = dataDF.sample(n=SAMPLE_SIZE, random_state=67).reset_index(drop=False)
+
+if GROUP_BY_FAMILY:
+    model_to_family = {
+        "gpt-3.5-turbo": "GPT",
+        "gpt-4": "GPT",
+
+        "claude-instant-v1": "Claude",
+        "claude-v1": "Claude",
+
+        "alpaca-13b": "LLaMA-family",
+        "gpt4all-13b-snoozy": "LLaMA-family",
+        "guanaco-33b": "LLaMA-family",
+        "koala-13b": "LLaMA-family",
+        "llama-13b": "LLaMA-family",
+        "vicuna-13b": "LLaMA-family",
+        "vicuna-7b": "LLaMA-family",
+        "wizardlm-13b": "LLaMA-family",
+
+        "dolly-v2-12b": "Pythia-family",
+        "oasst-pythia-12b": "Pythia-family",
+    }
+    dataDF[llm_label] = dataDF[llm_label].replace(model_to_family)
+
+    if LIMIT_LLMS:
+        families = {"Claude", "GPT", "LLaMA-family", "palm-2"}
+        dataDF = dataDF[dataDF[llm_label].isin(families)]
+else:
+    if LIMIT_LLMS:
+        llms = {"gpt-4", "claude-v1", "palm-2"}
+        dataDF = dataDF[dataDF[llm_label].isin(llms)]
+
+
+vocab = Vocab(256)
 
 #transform data into a suitable form
 xDF = dataDF[output_label]
@@ -476,30 +553,33 @@ yTrain = tensor(yTrain.to_numpy(), dtype = torch.long)
 yValidate = tensor(yValidate.to_numpy(), dtype = torch.long)
 yTest = tensor(yTest.to_numpy(), dtype = torch.long)
 
+print(xTrain.shape)
+print(xValidate.shape)
+print(xTest.shape)
+
 # Create CNN model
 cnn_parameters = {
-    "embedding_dimension" : 150,
+    "embedding_dimension" : 250,
     "out_channels" : 16,
-    "kernel_size" : 5,
-    "dropout" : 0.2,
-    "early_stopping_epochs" : 5,
+    "kernel_size" : 10,
+    "dropout" : 0.40,
+    "early_stopping_epochs" : 20,
     "max_epochs" : 1000,
-    "batch_size" : 32,
+    "batch_size" : 128,
     "shuffle" : 2,
-    "learning_rate" : 1e-3,
+    "learning_rate" : 1e-4,
     }
 
 cnn_model = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab, cnn_parameters)
 cnn_model.fit(True)
 cnn_model.print_evaluation()
-# Accuracy: 0.9134, Loss: 0.2274
 
 # try CNN with input only
 xDF2 = dataDF[input_label]
 xTrain2, xTest2, yTrain2, yTest2 = train_test_split(xDF2, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
 xTrain2, xValidate2, yTrain2, yValidate2 = train_test_split(xTrain2, yTrain2, test_size= 0.2 / 0.8, stratify = yTrain2, random_state=41)
 
-vocab_2 = Vocab(512)
+vocab_2 = Vocab(256)
 vocab_2.class_to_id = vocab.class_to_id
 vocab_2.id_to_class = vocab.id_to_class
 vocab_2.add_vocab_tokens(xTrain2)
@@ -521,7 +601,7 @@ xDF3 = dataDF[[input_label, output_label]]
 xTrain3, xTest3, yTrain3, yTest3 = train_test_split(xDF3, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
 xTrain3, xValidate3, yTrain3, yValidate3 = train_test_split(xTrain3, yTrain3, test_size= 0.2 / 0.8, stratify = yTrain3, random_state=41)
 
-vocab_3 = Vocab(512)
+vocab_3 = Vocab(256)
 vocab_3.class_to_id = vocab.class_to_id
 vocab_3.id_to_class = vocab.id_to_class
 vocab_3.add_vocab_tokens(xTrain3[input_label])
@@ -537,7 +617,6 @@ yTest3 = tensor(yTest3.to_numpy(), dtype = torch.long)
 cnn_model_3 = CNNTextClassifier(xTrain3, yTrain3, xValidate3, yValidate3, xTest3, yTest3, vocab_3, cnn_parameters)
 cnn_model_3.fit(True)
 cnn_model_3.print_evaluation()
-# Accuracy: 0.9185, Loss: 0.2131
 
 #RNN using the same output-only dataset
 rnn_parameters = {
@@ -545,9 +624,9 @@ rnn_parameters = {
     "hidden_size": 128,
     "num_layers" : 3,
     "dropout" : 0.1,
-    "early_stopping_epochs" : 5,
+    "early_stopping_epochs" : 10,
     "max_epochs" : 1000,
-    "batch_size" : 32,
+    "batch_size" : 128,
     "shuffle" : 2,
     "learning_rate" : 1e-3,
     }
@@ -555,16 +634,13 @@ rnn_parameters = {
 rnn_model = RNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab, rnn_parameters)
 rnn_model.fit(True)
 rnn_model.print_evaluation()
-# accuracy: 0.8620, loss: 0.3968
 
 # RNN with input only
 rnn_model_2 = RNNTextClassifier(xTrain2, yTrain2, xValidate2, yValidate2, xTest2, yTest2, vocab_2, rnn_parameters)
 rnn_model_2.fit(True)
 rnn_model_2.print_evaluation()
-# accuracy: 0.5794, loss: 1.7520
 
 # RNN with both input and output
 rnn_model_3 = RNNTextClassifier(xTrain3, yTrain3, xValidate3, yValidate3, xTest3, yTest3, vocab_3, rnn_parameters)
 rnn_model_3.fit(True)
 rnn_model_3.print_evaluation()
-# accuracy: 0.8542, loss: 0.3809 
