@@ -1,0 +1,187 @@
+Results for LMSYS Chatbot Arena, all LLMs
+
+CNN, Output Only
+Loss: 2.696502685546875
+Accuracy: 0.18621212121212122
+Report:
+                          precision    recall  f1-score   support
+
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             alpaca-13b       0.15      0.64      0.25       891
+             chatglm-6b       0.00      0.00      0.00       665
+      claude-instant-v1       0.14      0.14      0.14       525
+              claude-v1       0.36      0.55      0.43       785
+           dolly-v2-12b       0.00      0.00      0.00       557
+         fastchat-t5-3b       0.00      0.00      0.00       642
+          gpt-3.5-turbo       0.12      0.10      0.11       931
+                  gpt-4       0.20      0.28      0.24       843
+     gpt4all-13b-snoozy       0.00      0.00      0.00       219
+            guanaco-33b       0.00      0.00      0.00       207
+              koala-13b       0.24      0.31      0.27      1115
+              llama-13b       0.00      0.00      0.00       402
+            mpt-7b-chat       0.00      0.00      0.00       571
+       oasst-pythia-12b       0.11      0.05      0.07       978
+                 palm-2       0.52      0.37      0.43       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+             vicuna-13b       0.12      0.37      0.19      1186
+              vicuna-7b       0.00      0.00      0.00       574
+           wizardlm-13b       0.00      0.00      0.00       223
+
+               accuracy                           0.19     13200
+              macro avg       0.10      0.14      0.11     13200
+           weighted avg       0.12      0.19      0.13     13200
+
+CNN, Input Only
+Loss: 2.9092557430267334
+Accuracy: 0.08893939393939394
+Report:
+                          precision    recall  f1-score   support
+
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             alpaca-13b       0.00      0.00      0.00       891
+             chatglm-6b       0.00      0.00      0.00       665
+      claude-instant-v1       0.00      0.00      0.00       525
+              claude-v1       0.00      0.00      0.00       785
+           dolly-v2-12b       0.00      0.00      0.00       557
+         fastchat-t5-3b       0.00      0.00      0.00       642
+          gpt-3.5-turbo       0.07      0.01      0.01       931
+                  gpt-4       0.00      0.00      0.00       843
+     gpt4all-13b-snoozy       0.00      0.00      0.00       219
+            guanaco-33b       0.00      0.00      0.00       207
+              koala-13b       0.08      0.09      0.08      1115
+              llama-13b       0.00      0.00      0.00       402
+            mpt-7b-chat       0.00      0.00      0.00       571
+       oasst-pythia-12b       0.07      0.00      0.01       978
+                 palm-2       0.00      0.00      0.00       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+             vicuna-13b       0.09      0.90      0.16      1186
+              vicuna-7b       0.17      0.00      0.00       574
+           wizardlm-13b       0.00      0.00      0.00       223
+
+               accuracy                           0.09     13200
+              macro avg       0.02      0.05      0.01     13200
+           weighted avg       0.03      0.09      0.02     13200
+
+CNN, Input and Output
+Loss: 2.674863576889038
+Accuracy: 0.1803030303030303
+Report:
+                          precision    recall  f1-score   support
+
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             alpaca-13b       0.16      0.54      0.25       891
+             chatglm-6b       0.10      0.00      0.01       665
+      claude-instant-v1       0.20      0.02      0.04       525
+              claude-v1       0.43      0.61      0.51       785
+           dolly-v2-12b       0.00      0.00      0.00       557
+         fastchat-t5-3b       0.00      0.00      0.00       642
+          gpt-3.5-turbo       0.11      0.10      0.11       931
+                  gpt-4       0.24      0.15      0.18       843
+     gpt4all-13b-snoozy       0.00      0.00      0.00       219
+            guanaco-33b       0.00      0.00      0.00       207
+              koala-13b       0.21      0.37      0.26      1115
+              llama-13b       0.00      0.00      0.00       402
+            mpt-7b-chat       0.00      0.00      0.00       571
+       oasst-pythia-12b       0.12      0.10      0.11       978
+                 palm-2       0.36      0.26      0.30       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+             vicuna-13b       0.12      0.44      0.19      1186
+              vicuna-7b       0.00      0.00      0.00       574
+           wizardlm-13b       0.00      0.00      0.00       223
+
+               accuracy                           0.18     13200
+              macro avg       0.10      0.13      0.10     13200
+           weighted avg       0.13      0.18      0.13     13200
+
+RNN, Output Only
+Accuracy: 0.18045454545454545
+Loss: 2.6106326860370057
+Report:
+                          precision    recall  f1-score   support
+
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             alpaca-13b       0.16      0.73      0.26       891
+             chatglm-6b       0.00      0.00      0.00       665
+      claude-instant-v1       0.00      0.00      0.00       525
+              claude-v1       0.41      0.70      0.51       785
+           dolly-v2-12b       0.00      0.00      0.00       557
+         fastchat-t5-3b       0.00      0.00      0.00       642
+          gpt-3.5-turbo       0.11      0.39      0.18       931
+                  gpt-4       0.18      0.08      0.11       843
+     gpt4all-13b-snoozy       0.00      0.00      0.00       219
+            guanaco-33b       0.00      0.00      0.00       207
+              koala-13b       0.22      0.17      0.20      1115
+              llama-13b       0.00      0.00      0.00       402
+            mpt-7b-chat       0.00      0.00      0.00       571
+       oasst-pythia-12b       0.09      0.08      0.09       978
+                 palm-2       0.43      0.34      0.38       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+             vicuna-13b       0.14      0.24      0.17      1186
+              vicuna-7b       0.00      0.00      0.00       574
+           wizardlm-13b       0.00      0.00      0.00       223
+
+               accuracy                           0.18     13200
+              macro avg       0.09      0.14      0.10     13200
+           weighted avg       0.11      0.18      0.12     13200
+
+RNN, Input Only
+Accuracy: 0.09
+Loss: 2.907164434375185
+Report:
+                          precision    recall  f1-score   support
+
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             alpaca-13b       0.00      0.00      0.00       891
+             chatglm-6b       0.00      0.00      0.00       665
+      claude-instant-v1       0.00      0.00      0.00       525
+              claude-v1       0.00      0.00      0.00       785
+           dolly-v2-12b       0.00      0.00      0.00       557
+         fastchat-t5-3b       0.07      0.00      0.00       642
+          gpt-3.5-turbo       0.00      0.00      0.00       931
+                  gpt-4       0.00      0.00      0.00       843
+     gpt4all-13b-snoozy       0.00      0.00      0.00       219
+            guanaco-33b       0.00      0.00      0.00       207
+              koala-13b       0.09      0.01      0.01      1115
+              llama-13b       0.00      0.00      0.00       402
+            mpt-7b-chat       0.00      0.00      0.00       571
+       oasst-pythia-12b       0.03      0.00      0.00       978
+                 palm-2       0.14      0.00      0.01       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+             vicuna-13b       0.09      0.98      0.17      1186
+              vicuna-7b       0.00      0.00      0.00       574
+           wizardlm-13b       0.07      0.04      0.05       223
+
+               accuracy                           0.09     13200
+              macro avg       0.02      0.05      0.01     13200
+           weighted avg       0.03      0.09      0.02     13200
+
+RNN, Input and Output
+Accuracy: 0.1503030303030303
+Loss: 2.7428539833878025
+Report:
+                          precision    recall  f1-score   support
+
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             alpaca-13b       0.13      0.81      0.23       891
+             chatglm-6b       0.00      0.00      0.00       665
+      claude-instant-v1       0.00      0.00      0.00       525
+              claude-v1       0.54      0.39      0.46       785
+           dolly-v2-12b       0.00      0.00      0.00       557
+         fastchat-t5-3b       0.00      0.00      0.00       642
+          gpt-3.5-turbo       0.11      0.24      0.15       931
+                  gpt-4       0.15      0.07      0.10       843
+     gpt4all-13b-snoozy       0.00      0.00      0.00       219
+            guanaco-33b       0.00      0.00      0.00       207
+              koala-13b       0.14      0.40      0.20      1115
+              llama-13b       0.00      0.00      0.00       402
+            mpt-7b-chat       0.00      0.00      0.00       571
+       oasst-pythia-12b       0.22      0.00      0.00       978
+                 palm-2       0.24      0.25      0.25       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+             vicuna-13b       0.10      0.06      0.07      1186
+              vicuna-7b       0.00      0.00      0.00       574
+           wizardlm-13b       0.00      0.00      0.00       223
+
+               accuracy                           0.15     13200
+              macro avg       0.08      0.11      0.07     13200
+           weighted avg       0.11      0.15      0.09     13200

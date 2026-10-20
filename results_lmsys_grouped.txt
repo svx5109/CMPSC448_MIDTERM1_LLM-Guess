@@ -1,0 +1,127 @@
+Results for LMSYS Chatbot Arena, LLMs grouped by family
+
+CNN, Output Only
+Loss: 1.8099406957626343
+Accuracy: 0.4159090909090909
+Report:
+                          precision    recall  f1-score   support
+
+                 Claude       0.69      0.53      0.60      1311
+                    GPT       0.37      0.04      0.08      1774
+           LLaMA-family       0.40      0.96      0.56      4817
+          Pythia-family       0.00      0.00      0.00      1535
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             chatglm-6b       0.00      0.00      0.00       664
+         fastchat-t5-3b       0.00      0.00      0.00       642
+            mpt-7b-chat       0.00      0.00      0.00       571
+                 palm-2       0.34      0.15      0.21       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+
+               accuracy                           0.42     13200
+              macro avg       0.18      0.17      0.14     13200
+           weighted avg       0.28      0.42      0.28     13200
+
+CNN, Input Only
+Loss: 1.9883798360824585
+Accuracy: 0.3646212121212121
+Report:
+                          precision    recall  f1-score   support
+
+                 Claude       0.00      0.00      0.00      1311
+                    GPT       0.25      0.00      0.00      1774
+           LLaMA-family       0.36      1.00      0.53      4817
+          Pythia-family       0.00      0.00      0.00      1535
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             chatglm-6b       0.00      0.00      0.00       664
+         fastchat-t5-3b       0.00      0.00      0.00       642
+            mpt-7b-chat       0.00      0.00      0.00       571
+                 palm-2       0.00      0.00      0.00       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+
+               accuracy                           0.36     13200
+              macro avg       0.06      0.10      0.05     13200
+           weighted avg       0.17      0.36      0.20     13200
+
+CNN, Input and Output
+Loss: 1.8485676050186157
+Accuracy: 0.40545454545454546
+Report:
+                          precision    recall  f1-score   support
+
+                 Claude       0.53      0.60      0.56      1311
+                    GPT       0.25      0.09      0.13      1774
+           LLaMA-family       0.40      0.91      0.55      4817
+          Pythia-family       0.00      0.00      0.00      1535
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             chatglm-6b       0.00      0.00      0.00       664
+         fastchat-t5-3b       0.00      0.00      0.00       642
+            mpt-7b-chat       0.00      0.00      0.00       571
+                 palm-2       0.48      0.02      0.03       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+
+               accuracy                           0.41     13200
+              macro avg       0.17      0.16      0.13     13200
+           weighted avg       0.25      0.41      0.28     13200
+
+RNN, Output Only
+Accuracy: 0.42522727272727273
+Loss: 1.8074030905058889
+Report:
+                          precision    recall  f1-score   support
+
+                 Claude       0.75      0.68      0.71      1311
+                    GPT       0.29      0.22      0.25      1774
+           LLaMA-family       0.41      0.90      0.56      4817
+          Pythia-family       0.00      0.00      0.00      1535
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             chatglm-6b       0.00      0.00      0.00       664
+         fastchat-t5-3b       0.00      0.00      0.00       642
+            mpt-7b-chat       0.00      0.00      0.00       571
+                 palm-2       0.00      0.00      0.00       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+
+               accuracy                           0.43     13200
+              macro avg       0.14      0.18      0.15     13200
+           weighted avg       0.26      0.43      0.31     13200
+
+RNN, Input Only
+Accuracy: 0.36492424242424243
+Loss: 1.9869692623254025
+Report:
+                          precision    recall  f1-score   support
+
+                 Claude       0.00      0.00      0.00      1311
+                    GPT       0.00      0.00      0.00      1774
+           LLaMA-family       0.36      1.00      0.53      4817
+          Pythia-family       0.00      0.00      0.00      1535
+       RWKV-4-Raven-14B       0.00      0.00      0.00       736
+             chatglm-6b       0.00      0.00      0.00       664
+         fastchat-t5-3b       0.00      0.00      0.00       642
+            mpt-7b-chat       0.00      0.00      0.00       571
+                 palm-2       0.00      0.00      0.00       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+
+               accuracy                           0.36     13200
+              macro avg       0.04      0.10      0.05     13200
+           weighted avg       0.13      0.36      0.20     13200
+
+RNN, Input and Output
+Accuracy: 0.40863636363636363
+Loss: 1.8591485847126354
+Report:
+                          precision    recall  f1-score   support
+
+                 Claude       0.75      0.56      0.64      1311
+                    GPT       0.19      0.02      0.03      1774
+           LLaMA-family       0.39      0.95      0.55      4817
+          Pythia-family       0.12      0.00      0.01      1535
+       RWKV-4-Raven-14B       0.11      0.01      0.01       736
+             chatglm-6b       0.11      0.01      0.02       664
+         fastchat-t5-3b       0.00      0.00      0.00       642
+            mpt-7b-chat       0.00      0.00      0.00       571
+                 palm-2       0.20      0.02      0.04       591
+stablelm-tuned-alpha-7b       0.00      0.00      0.00       559
+
+               accuracy                           0.41     13200
+              macro avg       0.19      0.16      0.13     13200
+           weighted avg       0.28      0.41      0.27     13200

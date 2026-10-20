@@ -407,10 +407,10 @@ class RNNTextClassifier:
             if epochs_no_improve >= self.parameters["early_stopping_epochs"]:
                 break
 
-            #restore best state
-            self.embedding.load_state_dict(best_embedding_state)
-            self.lstm.load_state_dict(best_lstm_state)
-            self.classifier.load_state_dict(best_classifier_state)
+        #restore best state
+        self.embedding.load_state_dict(best_embedding_state)
+        self.lstm.load_state_dict(best_lstm_state)
+        self.classifier.load_state_dict(best_classifier_state)
 
     def print_evaluation(self) -> None:
         self.embedding.eval()
@@ -451,7 +451,7 @@ class RNNTextClassifier:
             print("Report:\n", report)
 
 RANDOM_SAMPLE = False
-SAMPLE_SIZE = 25000
+SAMPLE_SIZE = 40000
 GROUP_BY_FAMILY = False
 LIMIT_LLMS = True
 
@@ -522,7 +522,7 @@ if GROUP_BY_FAMILY:
     dataDF[llm_label] = dataDF[llm_label].replace(model_to_family)
 
     if LIMIT_LLMS:
-        families = {"Claude", "GPT", "LLaMA-family", "palm-2"}
+        families = {"Claude", "GPT", "LLaMA-family"}
         dataDF = dataDF[dataDF[llm_label].isin(families)]
 else:
     if LIMIT_LLMS:
@@ -559,16 +559,17 @@ print(xTest.shape)
 
 # Create CNN model
 cnn_parameters = {
-    "embedding_dimension" : 250,
+    "embedding_dimension" : 200,
     "out_channels" : 16,
     "kernel_size" : 10,
     "dropout" : 0.40,
-    "early_stopping_epochs" : 20,
+    "early_stopping_epochs" : 30,
     "max_epochs" : 1000,
     "batch_size" : 128,
     "shuffle" : 2,
-    "learning_rate" : 1e-4,
+    "learning_rate" : 1e-4
     }
+
 
 cnn_model = CNNTextClassifier(xTrain, yTrain, xValidate, yValidate, xTest, yTest, vocab, cnn_parameters)
 cnn_model.fit(True)
@@ -579,7 +580,7 @@ xDF2 = dataDF[input_label]
 xTrain2, xTest2, yTrain2, yTest2 = train_test_split(xDF2, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
 xTrain2, xValidate2, yTrain2, yValidate2 = train_test_split(xTrain2, yTrain2, test_size= 0.2 / 0.8, stratify = yTrain2, random_state=41)
 
-vocab_2 = Vocab(256)
+vocab_2 = Vocab(128)
 vocab_2.class_to_id = vocab.class_to_id
 vocab_2.id_to_class = vocab.id_to_class
 vocab_2.add_vocab_tokens(xTrain2)
@@ -601,7 +602,7 @@ xDF3 = dataDF[[input_label, output_label]]
 xTrain3, xTest3, yTrain3, yTest3 = train_test_split(xDF3, yDF, test_size = 0.2, stratify = yDF, random_state = 67)
 xTrain3, xValidate3, yTrain3, yValidate3 = train_test_split(xTrain3, yTrain3, test_size= 0.2 / 0.8, stratify = yTrain3, random_state=41)
 
-vocab_3 = Vocab(256)
+vocab_3 = Vocab(384)
 vocab_3.class_to_id = vocab.class_to_id
 vocab_3.id_to_class = vocab.id_to_class
 vocab_3.add_vocab_tokens(xTrain3[input_label])
@@ -620,13 +621,13 @@ cnn_model_3.print_evaluation()
 
 #RNN using the same output-only dataset
 rnn_parameters = {
-    "embedding_dimension" : 150,
+    "embedding_dimension" : 200,
     "hidden_size": 128,
     "num_layers" : 3,
-    "dropout" : 0.1,
-    "early_stopping_epochs" : 10,
+    "dropout" : 0.15,
+    "early_stopping_epochs" : 40,
     "max_epochs" : 1000,
-    "batch_size" : 128,
+    "batch_size" : 64,
     "shuffle" : 2,
     "learning_rate" : 1e-3,
     }

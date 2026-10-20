@@ -1,0 +1,85 @@
+Results for LMSYS Chatbot Arena, LLMs grouped by family and only 3 families
+
+CNN, Output Only
+Loss: 0.7477033138275146
+Accuracy: 0.6813464945583396
+Report:
+               precision    recall  f1-score   support
+
+      Claude       0.81      0.52      0.63      1311
+         GPT       0.37      0.16      0.22      1774
+LLaMA-family       0.70      0.92      0.80      4817
+
+    accuracy                           0.68      7902
+   macro avg       0.63      0.53      0.55      7902
+weighted avg       0.65      0.68      0.64      7902
+
+CNN, Input Only
+Loss: 0.9415112137794495
+Accuracy: 0.6093394077448747
+Report:
+               precision    recall  f1-score   support
+
+      Claude       0.60      0.00      0.00      1311
+         GPT       0.27      0.00      0.00      1774
+LLaMA-family       0.61      1.00      0.76      4817
+
+    accuracy                           0.61      7902
+   macro avg       0.49      0.33      0.26      7902
+weighted avg       0.53      0.61      0.46      7902
+
+CNN, Input and Output
+Loss: 0.8029030561447144
+Accuracy: 0.672867628448494
+Report:
+               precision    recall  f1-score   support
+
+      Claude       0.59      0.61      0.60      1311
+         GPT       0.56      0.06      0.11      1774
+LLaMA-family       0.69      0.92      0.79      4817
+
+    accuracy                           0.67      7902
+   macro avg       0.61      0.53      0.50      7902
+weighted avg       0.65      0.67      0.60      7902
+
+RNN, Output Only
+Accuracy: 0.6834978486459125
+Loss: 0.764921121765046
+Report:
+               precision    recall  f1-score   support
+
+      Claude       0.72      0.59      0.65      1311
+         GPT       0.38      0.03      0.06      1774
+LLaMA-family       0.68      0.95      0.80      4817
+
+    accuracy                           0.68      7902
+   macro avg       0.60      0.52      0.50      7902
+weighted avg       0.62      0.68      0.61      7902
+
+RNN, Input Only
+Accuracy: 0.6095925082257656
+Loss: 0.9364000513595256
+Report:
+               precision    recall  f1-score   support
+
+      Claude       0.00      0.00      0.00      1311
+         GPT       0.00      0.00      0.00      1774
+LLaMA-family       0.61      1.00      0.76      4817
+
+    accuracy                           0.61      7902
+   macro avg       0.20      0.33      0.25      7902
+weighted avg       0.37      0.61      0.46      7902
+
+RNN, Input and Output
+Accuracy: 0.7019741837509491
+Loss: 0.7516107590884626
+Report:
+               precision    recall  f1-score   support
+
+      Claude       0.85      0.65      0.73      1311
+         GPT       0.44      0.03      0.06      1774
+LLaMA-family       0.69      0.96      0.80      4817
+
+    accuracy                           0.70      7902
+   macro avg       0.66      0.55      0.53      7902
+weighted avg       0.66      0.70      0.62      7902
